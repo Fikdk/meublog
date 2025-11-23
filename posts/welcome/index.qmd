@@ -1,0 +1,108 @@
+---
+title: "**Monitoramento de Frota de Ônibus**"
+author: "Luigi Del Vecchio"
+date: "2025-11-23"
+categories: [api, code, python, mapa]
+image: "sptrans.jpg"
+jupyter: python3
+---
+
+**Atividade 02**
+
+Nessa atividade eu mostro como criar um construir um **mapa com os pontos de parada de uma linha de ônibus** e também mostrar (caso possível) onde o ônibus está no momento da execução.
+
+Primeiro realizamos a autenticação na **API do SPTRNS**, utilizando nosso **TOKEN**
+
+```{python}
+import requests
+
+TOKEN = "ea84177763f74df8756725d22f7b5f3140e40aed0acd375bce74b35b354c16b2"
+BASE_URL = "http://api.olhovivo.sptrans.com.br/v2.1"
+
+sessao = requests.Session()
+
+login = sessao.post(
+    f"{BASE_URL}/Login/Autenticar",
+    params={"token": TOKEN}
+)
+
+if login.text != "true":
+    raise Exception("Erro na autenticação com o Olho Vivo")
+```
+
+Após a autenticação podemos realmente começar a montar o nosso mapa com as informações, informando qual é a URL e Linha, no nosso caso será a linha "8000" que é uma linha de teste da própria API, no momento que estava fazendo a ativdade acabei tomando limite de tempo e precisei usar essa linha.
+
+```{python}
+import requests
+import folium
+from IPython.display import display
+
+LINHA = "8000"
+
+# buscamos a linha informada
+linha_response = sessao.get(
+    f"{BASE_URL}/Linha/Buscar",
+    params={"termosBusca": LINHA}
+)
+
+linha_dados = linha_response.json()
+
+if not linha_dados:
+    raise Exception("linha não encontrada na API.")
+
+print("linhas retornadas pela API:")
+for linha in linha_dados:
+    print(linha)
+
+codigo_linha = linha_dados[0]["cl"]
+print("Código da linha:", codigo_linha)
+
+# buscamos as paradas
+paradas_response = sessao.get(
+    f"{BASE_URL}/Parada/BuscarParadasPorLinha",
+    params={"codigoLinha": codigo_linha}
+)
+
+paradas = paradas_response.json()
+
+print("Paradas encontradas:", len(paradas))
+
+if not paradas:
+    print("nenhuma parada encontrada para essa linha!")
+    print("Código usado:", codigo_linha)
+    raise Exception("a API não retornou paradas.")
+
+# buscamos a posicao do onibus no momento da execucao
+posicao_response = sessao.get(
+    f"{BASE_URL}/Posicao/Linha",
+    params={"codigoLinha": codigo_linha}
+)
+
+posicoes = posicao_response.json()
+
+# pegamos a posicao inicial da rota
+lat_base = paradas[0]["py"]
+lon_base = paradas[0]["px"]
+
+mapa = folium.Map(location=[lat_base, lon_base], zoom_start=13)
+
+# aqui adicionamos os marcadores nas paradas
+for parada in paradas:
+    folium.Marker(
+        location=[parada["py"], parada["px"]],
+        popup=f"Parada: {parada['np']}",
+        icon=folium.Icon(color="red", icon="info-sign")
+    ).add_to(mapa)
+
+# aqui adicionamos os marcadores nos onibus
+for veiculo in posicoes["vs"]:
+    folium.Marker(
+        location=[veiculo["py"], veiculo["px"]],
+        popup=f"Ônibus - Prefixo: {veiculo['p']}",
+        icon=folium.Icon(color="blue", icon="bus")
+    ).add_to(mapa)
+
+display(mapa)
+```
+
+Agora com o mapa gerado, podemos acompanhar os ônibus **(marcadores azuis)** e as paradas dessa linha **(marcadores vermelhos)**.

@@ -1,0 +1,103 @@
+---
+title: "**Cotação do Dólar por Período**"
+author: "Luigi Del Vecchio"
+date: "2025-11-23"
+categories: [api, code, python, dolar, analise]
+image: "dolar.jpg"
+jupyter: python3
+---
+
+**Atividade 01**
+
+Neste post mostrarei como criei uma rotina que **analisa os dados da cotação do dólar** no período de fevereiro de 2010. 
+
+Primeiro vamos começar criando a função **cotar**, que busca os dados de venda do dólar em X data, no meu caso 02/2010.
+```{python}
+import requests
+from datetime import datetime, timedelta
+
+def cotar(data):
+
+    url = fr"https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/" \
+          fr"CotacaoDolarDia(dataCotacao=@dataCotacao)?@dataCotacao='{data}'&$format=json"
+
+    res = requests.get(url)
+    res = res.json()
+
+    # caso exista dados para esse dia
+    if res['value']: 
+        return res['value'][0]['cotacaoVenda']
+
+    # caso não exista dados, como sábado, domingo ou feriados
+    else:
+        dia_anterior = datetime.strptime(data, "%m%d%Y") - timedelta(days=1)
+        dia_anterior = datetime.strftime(dia_anterior, "%m%d%Y")
+        return cotar(dia_anterior)
+
+```
+
+Agora com essa primeira etapa feita podemos seguir com a busca dos dados e exibir em um gráfico, utilizando o **plotly**.
+
+```{python}
+import calendar
+from datetime import datetime, timedelta
+import pandas as pd
+import plotly.express as px
+
+def cotacao_mes(mes_ano):
+
+    """vai receber uma string no formato mes/ano.
+    e em seguida retorna um dataframe com a data e as respectiva cotação do dólar."""
+
+    data_inicial = datetime.strptime(mes_ano, "%m%Y")
+
+    # essa parte descobre para gente o último dia do mês informado
+    ultimo_dia = calendar.monthrange(data_inicial.year, data_inicial.month)[1]
+    data_final = data_inicial.replace(day=ultimo_dia)
+
+    datas = []
+    cotacoes = []
+
+    data_atual = data_inicial
+
+    while data_atual <= data_final:
+        data_formatada = data_atual.strftime("%m%d%Y")
+        cotacao = cotar(data_formatada)
+
+        datas.append(data_atual.date())
+        cotacoes.append(cotacao)
+
+        data_atual += timedelta(days=1)
+
+    # criar dataFrame
+    df = pd.DataFrame({
+        "Data": datas,
+        "Cotação (R$)": cotacoes
+    })
+
+    return df
+
+
+def plotar_cotacao(mes_ano):
+    
+    # essa função fica responsável por criar o gráfico
+    df = cotacao_mes(mes_ano)
+
+    fig = px.line(
+        df,
+        x="Data",
+        y="Cotação (R$)",
+        title=f"Cotação do Dólar - {mes_ano[:2]}/{mes_ano[2:]}",
+        labels={"Data": "Dia", "Cotação (R$)": "Cotação do Dólar (Venda)"}
+    )
+
+    fig.show()
+
+    return df
+
+
+# no nosso caso vai exibir fevereiro de 2010
+df_fevereiro = plotar_cotacao("022010")
+```
+
+E assim conseguimos fazer todo o acompanhamento do dólar no mês de fevereiro de 2010!

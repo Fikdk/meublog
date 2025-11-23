@@ -1,0 +1,12 @@
+{
+  "hash": "5a3553ae44e848357a05b3d69efd31ff",
+  "result": {
+    "engine": "jupyter",
+    "markdown": "---\ntitle: \"**Regressão linear**\"\nauthor: \"Luigi Del Vecchio\"\ndate: \"2025-11-23\"\ncategories: [api, code, python, grafico]\njupyter: python3\n---\n\n**Atividade 03**\n\nNesta atividade, utilizei a formula matricial da regressão linear para ajustar uma reta aos dados de anos de estudo e salário.\n\nPrimeiro vamos começar carregando os dois arquivos de textos (x,y), e em seguida criamos a matriz.\n\n::: {#df9fa367 .cell execution_count=1}\n``` {.python .cell-code}\nimport numpy as np\n\nvalores_x = np.loadtxt(\"x.txt\")\nvalores_y = np.loadtxt(\"y.txt\")\n\n# montamos a matriz\nx = np.column_stack((np.ones(len(valores_x)), valores_x))\n\n# transformamos y em coluna\ny = valores_y.reshape(-1, 1)\n\n# aplicamos a formula da regressao linear\nbeta = np.linalg.inv(x.T @ x) @ x.T @ y\n\n# aqui separamos os coeficientes\na = beta[0, 0]\nb = beta[1, 0]\n\nprint(\"Intercepto (a):\", a)\nprint(\"Inclinação (b):\", b)\n```\n\n::: {.cell-output .cell-output-stdout}\n```\nIntercepto (a): 373.93446839130695\nInclinação (b): 991.6278332981966\n```\n:::\n:::\n\n\nApós feita a matriz agora é hora de montar um gráfico que vai exibir esse cálculo para nós:\n\n::: {#bfa7d4db .cell execution_count=2}\n``` {.python .cell-code}\nfrom plotnine import (\n    ggplot, aes, geom_point, geom_abline, theme, labs\n)\nimport pandas as pd\n\ndf = pd.DataFrame({\n    \"Anos de Estudo\": valores_x,\n    \"Salário\": valores_y\n})\n\nplot = (\n    ggplot(df, aes(\"Anos de Estudo\", \"Salário\"))\n    + geom_point()\n    + geom_abline(intercept=a, slope=b)\n    + labs(x=\"Anos de Estudo\", y=\"Salário (R$)\")\n    + theme(subplots_adjust={'right': 0.95})\n)\n\nplot.draw()\n```\n\n::: {.cell-output .cell-output-stderr}\n```\n/home/codespace/.python/current/lib/python3.12/site-packages/plotnine/themes/themeable.py:2486: FutureWarning: You no longer need to use subplots_adjust to make space for the legend or text around the panels. This parameter will be removed in a future version. You can still use 'plot_margin' 'panel_spacing' for your other spacing needs.\n```\n:::\n\n::: {.cell-output .cell-output-display execution_count=2}\n![](index_files/figure-html/cell-3-output-2.png){width=691 height=499}\n:::\n:::\n\n\n",
+    "supporting": [
+      "index_files"
+    ],
+    "filters": [],
+    "includes": {}
+  }
+}

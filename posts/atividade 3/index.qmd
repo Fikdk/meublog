@@ -1,0 +1,60 @@
+---
+title: "**Regressão linear**"
+author: "Luigi Del Vecchio"
+date: "2025-11-23"
+categories: [code, python, grafico]
+image: "regressao.png"
+jupyter: python3
+---
+
+**Atividade 03**
+
+Nesta atividade, utilizei a formula matricial da regressão linear para ajustar uma reta aos dados de anos de estudo e salário.
+
+Primeiro vamos começar carregando os dois arquivos de textos (x,y), e em seguida criamos a matriz.
+```{python}
+import numpy as np
+
+valores_x = np.loadtxt("x.txt")
+valores_y = np.loadtxt("y.txt")
+
+# montamos a matriz
+x = np.column_stack((np.ones(len(valores_x)), valores_x))
+
+# transformamos y em coluna
+y = valores_y.reshape(-1, 1)
+
+# aplicamos a formula da regressao linear
+beta = np.linalg.inv(x.T @ x) @ x.T @ y
+
+# aqui separamos os coeficientes
+a = beta[0, 0]
+b = beta[1, 0]
+
+print("(a):", a)
+print("(b):", b)
+```
+
+Após feita a matriz agora é hora de montar um gráfico que vai exibir esse cálculo para nós:
+
+```{python}
+from plotnine import (
+    ggplot, aes, geom_point, geom_abline, theme, labs
+)
+import pandas as pd
+
+df = pd.DataFrame({
+    "Anos de Estudo": valores_x,
+    "Salário": valores_y
+})
+
+plot = (
+    ggplot(df, aes("Anos de Estudo", "Salário"))
+    + geom_point()
+    + geom_abline(intercept=a, slope=b)
+    + labs(x="Anos de Estudo", y="Salário (R$)")
+    + theme(subplots_adjust={'right': 0.95})
+)
+
+plot.draw()
+```
